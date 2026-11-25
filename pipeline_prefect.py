@@ -15,6 +15,19 @@ TARGET_FILES = ["model_pipeline.py", "main.py", "pipeline_prefect.py"]
 
 
 @task
+def pull_repository():
+    git_bin = shutil.which("git") or "git"
+    remotes = subprocess.run(
+        [git_bin, "remote"],
+        capture_output=True,
+        text=True,
+        check=True,
+    ).stdout.strip()
+    if remotes:
+        subprocess.run([git_bin, "pull", "--ff-only"], check=True)
+
+
+@task
 def install_dependencies():
     subprocess.run(
         [sys.executable, "-m", "pip", "install", "-q", "-r", "requirements.txt"],
@@ -92,6 +105,7 @@ def evaluate_flow():
 
 @flow(name="all")
 def all_flow():
+    pull_repository()
     install_dependencies()
     format_code()
     check_code_quality()
